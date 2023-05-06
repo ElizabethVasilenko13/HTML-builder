@@ -3,41 +3,39 @@ const path = require('path');
 const folderDirectory = path.join(__dirname, 'files');
 const copyDirectory = path.join(__dirname, 'files-copy');
 
-fs.mkdir(copyDirectory, { recursive: true }, (err) => {
-  if (err) {
-    console.error(err);
-    return;
-  }
+function cloneDirectory(currentDir, copyDir) {
 
-  fs.readdir(copyDirectory, (err, files) => {
+  fs.rm(copyDir, { recursive: true, force: true }, (err) => {
     if (err) {
       console.error(err);
       return;
     }
-    files.forEach(file => {
-      fs.unlink(path.join(copyDirectory, file), (err) => {
-        if (err) {
-          console.error(err);
-          return;
-        }
-      });
-    });
-
-    fs.readdir(folderDirectory, (err, files) => {
-      if (err) throw err;
-      files.forEach(file => {
-        fs.copyFile(path.join(folderDirectory, file), path.join(copyDirectory, file), (err) => {
+    fs.mkdir(copyDir, { recursive: true }, (err) => {
+      if (err) {
+        console.error(err);
+        return;
+      }
+        fs.readdir(currentDir, { withFileTypes: true }, (err, files) => {
           if (err) {
             console.error(err);
+            return;
           }
+          files.forEach(file => {
+            const current = path.join(currentDir, file.name);
+            const copy = path.join(copyDir, file.name);
+            if (file.isDirectory()) {
+              cloneDirectory(current, copy);
+            } else {
+              fs.copyFile(current, copy, (err) => {
+                if (err) {
+                  console.error(err);
+                }
+              });
+            }
+          });
         });
-      });
     });
   });
-});
+}
 
-
-
-
-
-
+cloneDirectory(folderDirectory, copyDirectory);
